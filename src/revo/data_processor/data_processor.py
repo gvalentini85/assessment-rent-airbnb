@@ -41,8 +41,43 @@ class DataProcessor:
     def clean_rentals(self, df: DataFrame) -> DataFrame:
         """Generate the silver layer for rentals data."""
         try:
-            self.rentals = df
-            return None
+            cols_list = [
+                "postalCode",
+                "latitude",
+                "longitude",
+                "propertyType",
+                "matchCapacity",
+                "rent",
+                "source",
+            ]
+
+            cols_changes = {
+                "latitude": col("latitude").cast("double"),
+                "longitude": col("longitude").cast("double"),
+                "matchCapacity": (
+                    regexp_replace(
+                        regexp_replace(
+                            col("matchCapacity"), "> 5 persons", "6"
+                        ),
+                        "[^0-9]",
+                        "",
+                    ).cast("double")
+                ),
+                "rent": regexp_replace(col("rent"), "[^0-9]", "").cast(
+                    "double"
+                ),
+            }
+
+            self.rentals = (
+                df.select([col_name for col_name in cols_list])
+                .dropDuplicates()
+                .withColumns(cols_changes)
+                .withColumnRenamed("postalCode", "zipcode")
+                .withColumnRenamed("propertyType", "type")
+                .withColumnRenamed("matchCapacity", "capacity")
+            )
+
+            return self.rentals
         except Exception as e:
             logger.error(f"Error processing rentals data: {e}", exc_info=True)
             raise
