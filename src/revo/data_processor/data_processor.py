@@ -33,6 +33,7 @@ class DataProcessor:
                 .withColumn("source", lit("airbnb"))
                 .withColumnRenamed("room_type", "type")
                 .withColumnRenamed("accommodates", "capacity")
+                .drop("bedrooms", "review_scores_value")
             )
             return self.airbnb
         except Exception as e:
