@@ -18,7 +18,7 @@ class DataLoader:
         """Load data from the specified URL into a DataFrame."""
         try:
             data_format = pathlib.Path(self.data_url).suffix
-            if data_format == ".json":
+            if data_format in [".json", ".geojson"]:
                 df = self._load_json()
             elif data_format == ".csv":
                 df = self._load_csv()
