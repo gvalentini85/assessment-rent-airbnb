@@ -28,7 +28,7 @@ class DataProcessor:
             }
 
             self.airbnb = df.dropDuplicates().withColumns(cols_changes)
-            return self.airbnb.copy()
+            return self.airbnb
         except Exception as e:
             logger.error(f"Error processing AirBnB data: {e}", exc_info=True)
             raise
@@ -52,7 +52,7 @@ class DataProcessor:
             # df.filter(df.room_type == "Entire home/apt")
             self.output = self.airbnb
             logger.info("Gold data processed successfully.")
-            return self.output.copy()
+            return self.output
         except Exception as e:
             logger.error(f"Error aggregating data: {e}", exc_info=True)
             raise
