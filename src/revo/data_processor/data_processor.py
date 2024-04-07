@@ -12,6 +12,7 @@ class DataProcessor:
     def __init__(self):
         self.airbnb = None
         self.rentals = None
+        self.post_codes = None
         self.output = None
 
     def clean_airbnb(self, df: DataFrame) -> DataFrame:
@@ -82,6 +83,20 @@ class DataProcessor:
             return self.rentals
         except Exception as e:
             logger.error(f"Error processing rentals data: {e}", exc_info=True)
+            raise
+
+    def clean_post_codes(self, df: DataFrame) -> DataFrame:
+        """Generate the silver layer for post codes data."""
+        try:
+            self.post_codes = (
+                df.drop("_corrupt_record").dropna().dropDuplicates()
+            )
+
+            return self.post_codes
+        except Exception as e:
+            logger.error(
+                f"Error processing post codes data: {e}", exc_info=True
+            )
             raise
 
     def aggregate_data(self) -> DataFrame:
