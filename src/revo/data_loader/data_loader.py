@@ -33,7 +33,7 @@ class DataLoader:
 
     def _load_csv(self) -> DataFrame:
         """Load data from a csv file into a DataFrame."""
-        return spark.read.format("csv").load(self.data_url)
+        return spark.read.option("header", True).csv(self.data_url)
 
     def _load_json(self) -> DataFrame:
         """Load data from a csv file into a DataFrame."""
