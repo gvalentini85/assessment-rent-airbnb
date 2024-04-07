@@ -1,7 +1,7 @@
 import logging
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, regexp_replace, upper
+from pyspark.sql.functions import col, lit, regexp_replace, upper
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +30,7 @@ class DataProcessor:
             self.airbnb = (
                 df.dropDuplicates()
                 .withColumns(cols_changes)
+                .withColumn("source", lit("airbnb"))
                 .withColumnRenamed("room_type", "type")
                 .withColumnRenamed("accommodates", "capacity")
             )
