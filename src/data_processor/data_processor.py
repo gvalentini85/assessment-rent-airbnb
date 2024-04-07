@@ -1,8 +1,6 @@
 import logging
 
-from pyspark.sql import DataFrame
-from pyspark.sql import functions
-
+from pyspark.sql import DataFrame, functions
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +32,11 @@ class DataProcessor:
             raise
 
     def aggregate_data(self) -> DataFrame:
-        """Aggregate the silver DataFrame to generate the gold layer, focusing on key metrics."""
+        """
+        Aggregate the silver DataFrame to generate the gold layer, focusing on
+        key metrics.
+        """
+
         try:
             self.output = self.airbnb
             logger.info("Gold data processed successfully.")
