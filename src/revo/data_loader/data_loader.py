@@ -1,6 +1,7 @@
 import logging
 import pathlib
 
+from pyspark.shell import spark
 from pyspark.sql import DataFrame
 
 logger = logging.getLogger(__name__)
