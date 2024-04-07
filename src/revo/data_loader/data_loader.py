@@ -1,4 +1,5 @@
 import logging
+import pathlib
 
 from pyspark.sql import DataFrame
 
@@ -15,9 +16,24 @@ class DataLoader:
     def load_data(self) -> DataFrame:
         """Load data from the specified URL into a DataFrame."""
         try:
-            df = spark.read.format("delta").load(self.data_url)
+            data_format = pathlib.Path(self.data_url).suffix
+            if data_format == ".json":
+                df = self._load_json()
+            elif data_format == ".csv":
+                df = self._load_csv()
+            else:
+                logger.error("Unsupported format", exc_info=True)
+                raise
             logger.info("Data loaded successfully.")
             return df
         except Exception as e:
             logger.error(f"Error loading data: {e}", exc_info=True)
             raise
+
+    def _load_csv(self) -> DataFrame:
+        """Load data from a csv file into a DataFrame."""
+        return spark.read.format("csv").load(self.data_url)
+
+    def _load_json(self) -> DataFrame:
+        """Load data from a csv file into a DataFrame."""
+        return spark.read.json(self.data_url)
