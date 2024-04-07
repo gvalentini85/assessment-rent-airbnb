@@ -61,7 +61,7 @@ class DataProcessor:
                         ),
                         "[^0-9]",
                         "",
-                    ).cast("double")
+                    ).cast("int")
                 ),
                 "rent": regexp_replace(col("rent"), "[^0-9]", "").cast(
                     "double"
