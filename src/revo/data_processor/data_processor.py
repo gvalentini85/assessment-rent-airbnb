@@ -27,7 +27,12 @@ class DataProcessor:
                 "review_scores_value": col("review_scores_value").cast("int"),
             }
 
-            self.airbnb = df.dropDuplicates().withColumns(cols_changes)
+            self.airbnb = (
+                df.dropDuplicates()
+                .withColumns(cols_changes)
+                .withColumnRenamed("room_type", "type")
+                .withColumnRenamed("accommodates", "capacity")
+            )
             return self.airbnb
         except Exception as e:
             logger.error(f"Error processing AirBnB data: {e}", exc_info=True)
