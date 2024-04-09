@@ -86,12 +86,19 @@ class DataProcessor:
             logger.error(f"Error processing rentals data: {e}", exc_info=True)
             raise
 
-    def clean_post_codes(self, df: DataFrame) -> DataFrame:
+    def clean_post_codes(self, data: dict) -> dict:
         """Generate the silver layer for post codes data."""
         try:
-            self.post_codes = (
-                df.drop("_corrupt_record").dropna().dropDuplicates()
-            )
+            new_features = []
+            for i in range(len(data["features"])):
+                if (
+                    data["features"][i]["properties"]["gem_name"]
+                    == "Amsterdam"
+                ):
+                    new_features.append(data["features"][i])
+
+            data["features"] = new_features
+            self.post_codes = data
 
             return self.post_codes
         except Exception as e:
