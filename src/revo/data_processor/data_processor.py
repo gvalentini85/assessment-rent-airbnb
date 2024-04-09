@@ -43,7 +43,9 @@ class DataProcessor:
             logger.error(f"Error processing AirBnB data: {e}", exc_info=True)
             raise
 
-    def clean_rentals(self, df: DataFrame) -> DataFrame:
+    def clean_rentals(
+        self, df: DataFrame, amsterdam_zipcodes: List[str]
+    ) -> DataFrame:
         """Generate the silver layer for rentals data."""
         try:
             cols_list = [
@@ -81,6 +83,8 @@ class DataProcessor:
                 .withColumnRenamed("postalCode", "zipcode")
                 .withColumnRenamed("propertyType", "type")
                 .withColumnRenamed("matchCapacity", "capacity")
+                .filter(col("type").isin(["Apartment", "Studio"]))
+                .filter(col("zipcode").isin(amsterdam_zipcodes))
             )
 
             return self.rentals
@@ -163,18 +167,8 @@ class DataProcessor:
                 .select([cname for cname in cols_list])
             )
 
-            # Work on rentals data:
-            # Filter only entire apartment and studio
-            df_rentals = self.rentals.filter(
-                col("type").isin(["Apartment", "Studio"])
-            )
-
-            # Filter common zipcodes
-            df_rentals = df_rentals.filter(
-                df_rentals.zipcode.isin(common_zipcodes)
-            )
-
-            # Compute normalized measures
+            # Work on rentals data: Compute normalized measures
+            df_rentals = self.rentals
             df_rentals = (
                 df_rentals.withColumn(
                     "daily_price", df_rentals.rent * 12.0 / 365.0
