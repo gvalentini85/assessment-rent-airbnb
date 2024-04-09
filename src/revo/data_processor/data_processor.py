@@ -1,7 +1,8 @@
 import logging
+from typing import List
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, lit, mean, regexp_replace, upper, when
+from pyspark.sql.functions import col, lit, mean, regexp_replace, when
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +14,7 @@ class DataProcessor:
         self.airbnb = None
         self.rentals = None
         self.post_codes = None
+        self.amsterdam_codes = []
         self.output = None
 
     def clean_airbnb(self, df: DataFrame) -> DataFrame:
@@ -86,21 +88,23 @@ class DataProcessor:
             logger.error(f"Error processing rentals data: {e}", exc_info=True)
             raise
 
-    def clean_post_codes(self, data: dict) -> dict:
+    def clean_post_codes(self, data: dict) -> List[dict, List]:
         """Generate the silver layer for post codes data."""
         try:
             new_features = []
+            amsterdam_codes = []
             for i in range(len(data["features"])):
-                if (
-                    data["features"][i]["properties"]["gem_name"]
-                    == "Amsterdam"
-                ):
+                city = data["features"][i]["properties"]["gem_name"]
+                zipcode = data["features"][i]["properties"]["pc4_code"]
+                if city == "Amsterdam":
                     new_features.append(data["features"][i])
+                    amsterdam_codes.append(zipcode)
 
             data["features"] = new_features
             self.post_codes = data
+            self.amsterdam_codes = amsterdam_codes
 
-            return self.post_codes
+            return [data, amsterdam_codes]
         except Exception as e:
             logger.error(
                 f"Error processing post codes data: {e}", exc_info=True
