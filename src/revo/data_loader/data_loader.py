@@ -1,5 +1,8 @@
+import json
 import logging
 import pathlib
+from typing import Union
+from urllib.request import urlopen
 
 from pyspark.shell import spark
 from pyspark.sql import DataFrame
@@ -14,12 +17,14 @@ class DataLoader:
         """Initialize the DataLoader with a data URL."""
         self.data_url = url
 
-    def load_data(self) -> DataFrame:
+    def load_data(self) -> Union[DataFrame, dict]:
         """Load data from the specified URL into a DataFrame."""
         try:
             data_format = pathlib.Path(self.data_url).suffix
-            if data_format in [".json", ".geojson"]:
+            if data_format == ".json":
                 df = self._load_json()
+            elif data_format == ".geojson":
+                df = self._load_geojson()
             elif data_format == ".csv":
                 df = self._load_csv()
             else:
@@ -38,3 +43,9 @@ class DataLoader:
     def _load_json(self) -> DataFrame:
         """Load data from a csv file into a DataFrame."""
         return spark.read.json(self.data_url)
+
+    def _load_geojson(self) -> dict:
+        """Load data from a csv file and keep the original json format."""
+        with urlopen(self.data_url) as response:
+            data = json.load(response)
+        return data
