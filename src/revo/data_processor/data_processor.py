@@ -19,7 +19,7 @@ class DataProcessor:
         """Generate the silver layer for AirBnB data."""
         try:
             cols_changes = {
-                "zipcode": regexp_replace(upper(col("zipcode")), "\\s+", ""),
+                "zipcode": regexp_replace(col("zipcode"), "[^0-9]", ""),
                 "latitude": col("latitude").cast("double"),
                 "longitude": col("longitude").cast("double"),
                 "accommodates": col("accommodates").cast("int"),
@@ -55,6 +55,7 @@ class DataProcessor:
             ]
 
             cols_changes = {
+                "postalCode": regexp_replace(col("postalCode"), "[^0-9]", ""),
                 "latitude": col("latitude").cast("double"),
                 "longitude": col("longitude").cast("double"),
                 "matchCapacity": (
