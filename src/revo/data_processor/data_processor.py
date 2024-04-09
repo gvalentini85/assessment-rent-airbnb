@@ -17,7 +17,9 @@ class DataProcessor:
         self.amsterdam_codes = []
         self.output = None
 
-    def clean_airbnb(self, df: DataFrame) -> DataFrame:
+    def clean_airbnb(
+        self, df: DataFrame, amsterdam_zipcodes: List[str]
+    ) -> DataFrame:
         """Generate the silver layer for AirBnB data."""
         try:
             cols_changes = {
@@ -36,8 +38,15 @@ class DataProcessor:
                 .withColumn("source", lit("airbnb"))
                 .withColumnRenamed("room_type", "type")
                 .withColumnRenamed("accommodates", "capacity")
+                .withColumn(
+                    "capacity",
+                    when(col("capacity") > 5, 6).otherwise(col("capacity")),
+                )
                 .drop("bedrooms", "review_scores_value")
+                .filter(col("type") == "Entire home/apt")
+                .filter(col("zipcode").isin(amsterdam_zipcodes))
             )
+
             return self.airbnb
         except Exception as e:
             logger.error(f"Error processing AirBnB data: {e}", exc_info=True)
@@ -129,32 +138,9 @@ class DataProcessor:
                 "monthly_price",
                 "monthly_price_per_person",
             ]
-            common_zipcodes = [
-                row["zipcode"]
-                for row in (
-                    self.airbnb.select("zipcode")
-                    .intersect(self.rentals.select("zipcode"))
-                    .collect()
-                )
-            ]
 
-            # Work on airbnb data:
-            # Filter only entire home
-            df_airbnb = self.airbnb.filter(col("type") == "Entire home/apt")
-
-            # Filter common zipcodes
-            df_airbnb = df_airbnb.filter(
-                df_airbnb.zipcode.isin(common_zipcodes)
-            )
-
-            # Set capacity > 5 to 6 (i.e., group all capacity higher
-            # than 5 together in a single category '6')
-            df_airbnb = df_airbnb.withColumn(
-                "capacity",
-                when(col("capacity") > 5, 6).otherwise(col("capacity")),
-            )
-
-            # Compute normalized measures
+            # Work on airbnb data: Compute normalized measures
+            df_airbnb = self.airbnb
             df_airbnb = (
                 df_airbnb.withColumn(
                     "monthly_price", df_airbnb.price * 365.0 / 12.0
