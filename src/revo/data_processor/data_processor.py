@@ -88,7 +88,7 @@ class DataProcessor:
             logger.error(f"Error processing rentals data: {e}", exc_info=True)
             raise
 
-    def clean_post_codes(self, data: dict) -> List[dict, List]:
+    def clean_post_codes(self, data: dict) -> [dict, List[str]]:
         """Generate the silver layer for post codes data."""
         try:
             new_features = []
