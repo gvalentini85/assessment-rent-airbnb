@@ -29,11 +29,9 @@ class DataProcessor:
         self.output = None
 
     def clean_airbnb(
-        self, df: DataFrame, amsterdam_zipcodes: List[str], post_codes: dict
+        self, df: DataFrame, amsterdam_zipcodes: List[str], geo_data: dict
     ) -> DataFrame:
         """Generate the silver layer for AirBnB data."""
-
-        geo_data = post_codes
 
         def zipcode_from_coordinates(coordinate: float):
             latitude = coordinate[0]
@@ -49,9 +47,9 @@ class DataProcessor:
 
             return None
 
-        zipcode_from_coordinates_udf = udf(
-            zipcode_from_coordinates, DoubleType()
-        )
+        #        zipcode_from_coordinates_udf = udf(
+        #            zipcode_from_coordinates, DoubleType()
+        #        )
 
         try:
             cols_changes = {
@@ -75,18 +73,19 @@ class DataProcessor:
                     when(col("capacity") > 5, 6).otherwise(col("capacity")),
                 )
                 .filter(col("type") == "Entire home/apt")
-                .withColumn(
-                    "zipcode",
-                    when(
-                        col("zipcode").isNull(),
-                        zipcode_from_coordinates_udf(
-                            array("latitude", "longitude")
-                        ),
-                    ).otherwise(col("zipcode")),
-                )
-                .withColumn(
-                    "zipcode", col("zipcode").cast("int").cast("string")
-                )
+                #                .withColumn(
+                #                    "zipcode",
+                #                    when(
+                #                        col("zipcode").isNull(),
+                #                        zipcode_from_coordinates_udf(
+                #                            array("latitude", "longitude")
+                #                        ),
+                #                    ).otherwise(col("zipcode")),
+                #                )
+                #                .withColumn(
+                #                    "zipcode", col("zipcode").cast("int")
+                #                    .cast("string")
+                #                )
                 .drop("bedrooms", "review_scores_value")
                 .filter(col("zipcode").isin(amsterdam_zipcodes))
             )
