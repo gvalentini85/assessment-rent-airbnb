@@ -29,9 +29,11 @@ class DataProcessor:
         self.output = None
 
     def clean_airbnb(
-        self, df: DataFrame, amsterdam_zipcodes: List[str], geo_data: dict
+        self, df: DataFrame, amsterdam_zipcodes: List[str], post_codes: dict
     ) -> DataFrame:
         """Generate the silver layer for AirBnB data."""
+
+        geo_data = post_codes
 
         def zipcode_from_coordinates(coordinate: float):
             latitude = coordinate[0]
