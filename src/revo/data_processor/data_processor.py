@@ -72,6 +72,7 @@ class DataProcessor:
                     "capacity",
                     when(col("capacity") > 5, 6).otherwise(col("capacity")),
                 )
+                .filter(col("type") == "Entire home/apt")
                 .withColumn(
                     "zipcode",
                     when(
@@ -85,7 +86,6 @@ class DataProcessor:
                     "zipcode", col("zipcode").cast("int").cast("string")
                 )
                 .drop("bedrooms", "review_scores_value")
-                .filter(col("type") == "Entire home/apt")
                 .filter(col("zipcode").isin(amsterdam_zipcodes))
             )
 
