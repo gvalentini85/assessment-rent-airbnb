@@ -2,7 +2,18 @@ import logging
 from typing import List
 
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, lit, mean, regexp_replace, when
+from pyspark.sql.types import DoubleType
+from shapely.geometry import Point, shape
+
+from pyspark.sql.functions import (  # isort:skip
+    array,
+    col,
+    lit,
+    mean,
+    regexp_replace,
+    udf,
+    when,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -18,9 +29,28 @@ class DataProcessor:
         self.output = None
 
     def clean_airbnb(
-        self, df: DataFrame, amsterdam_zipcodes: List[str]
+        self, df: DataFrame, amsterdam_zipcodes: List[str], geo_data: dict
     ) -> DataFrame:
         """Generate the silver layer for AirBnB data."""
+
+        def zipcode_from_coordinates(coordinate: float):
+            latitude = coordinate[0]
+            longitude = coordinate[1]
+
+            point = Point(longitude, latitude)
+
+            # Check each polygon to see if it contains the point
+            for feature in geo_data["features"]:
+                polygon = shape(feature["geometry"])
+                if polygon.contains(point):
+                    return float(feature["properties"]["pc4_code"])
+
+            return None
+
+        zipcode_from_coordinates_udf = udf(
+            zipcode_from_coordinates, DoubleType()
+        )
+
         try:
             cols_changes = {
                 "zipcode": regexp_replace(col("zipcode"), "[^0-9]", ""),
@@ -41,6 +71,18 @@ class DataProcessor:
                 .withColumn(
                     "capacity",
                     when(col("capacity") > 5, 6).otherwise(col("capacity")),
+                )
+                .withColumn(
+                    "zipcode",
+                    when(
+                        col("zipcode").isNull(),
+                        zipcode_from_coordinates_udf(
+                            array("latitude", "longitude")
+                        ),
+                    ).otherwise(col("zipcode")),
+                )
+                .withColumn(
+                    "zipcode", col("zipcode").cast("int").cast("string")
                 )
                 .drop("bedrooms", "review_scores_value")
                 .filter(col("type") == "Entire home/apt")
