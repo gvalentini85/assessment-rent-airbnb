@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+from pyspark.shell import spark
 from pyspark.sql import DataFrame
 from pyspark.sql.types import DoubleType
 from shapely.geometry import Point, shape
@@ -29,27 +30,27 @@ class DataProcessor:
         self.output = None
 
     def clean_airbnb(
-        self, df: DataFrame, amsterdam_zipcodes: List[str], geo_data: dict
+        self, df: DataFrame, amsterdam_zipcodes: List[str], post_codes: dict
     ) -> DataFrame:
         """Generate the silver layer for AirBnB data."""
 
-        def zipcode_from_coordinates(coordinate: float):
-            latitude = coordinate[0]
-            longitude = coordinate[1]
-
-            point = Point(longitude, latitude)
-
-            # Check each polygon to see if it contains the point
-            for feature in geo_data["features"]:
-                polygon = shape(feature["geometry"])
-                if polygon.contains(point):
-                    return float(feature["properties"]["pc4_code"])
-
-            return None
-
-        zipcode_from_coordinates_udf = udf(
-            zipcode_from_coordinates, DoubleType()
-        )
+        # def zipcode_from_coordinates(coordinate: float):
+        #     latitude = coordinate[0]
+        #     longitude = coordinate[1]
+        #
+        #     point = Point(longitude, latitude)
+        #
+        #     # Check each polygon to see if it contains the point
+        #     for feature in post_codes["features"]:
+        #         polygon = shape(feature["geometry"])
+        #         if polygon.contains(point):
+        #             return float(feature["properties"]["pc4_code"])
+        #
+        #     return None
+        #
+        # zipcode_from_coordinates_udf = udf(
+        #     zipcode_from_coordinates, DoubleType()
+        # )
 
         try:
             cols_changes = {
@@ -73,22 +74,37 @@ class DataProcessor:
                     when(col("capacity") > 5, 6).otherwise(col("capacity")),
                 )
                 .filter(col("type") == "Entire home/apt")
-                .withColumn(
-                    "zipcode",
-                    when(
-                        col("zipcode").isNull(),
-                        zipcode_from_coordinates_udf(
-                            array("latitude", "longitude")
-                        ),
-                    ).otherwise(col("zipcode")),
-                )
-                .withColumn(
-                    "zipcode", col("zipcode").cast("int").cast("string")
-                )
                 .drop("bedrooms", "review_scores_value")
-                # .filter(col("zipcode").isin(amsterdam_zipcodes))
             )
 
+            def zipcode_from_coordinates(
+                latitude: float, longitude: float, geo_data: dict
+            ):
+                # Check each polygon to see if it contains the point
+                point = Point(longitude, latitude)
+                for feature in geo_data["features"]:
+                    polygon = shape(feature["geometry"])
+                    if polygon.contains(point):
+                        return feature["properties"]["pc4_code"]
+                return None
+
+            # Fill missing zipcodes
+            airbnb_missing_zipcode = self.airbnb.filter(
+                col("zipcode").isNull()
+            ).toPandas()
+            airbnb_missing_zipcode["zipcode"] = airbnb_missing_zipcode.apply(
+                lambda x: zipcode_from_coordinates(
+                    x.latitude, x.longitude, post_codes
+                ),
+                axis=1,
+            )
+
+            # Complete filtering
+            self.airbnb = (
+                self.airbnb.filter(col("zipcode").isNotNull())
+                .union(spark.createDataFrame(airbnb_missing_zipcode))
+                .filter(col("zipcode").isin(amsterdam_zipcodes))
+            )
             return self.airbnb
         except Exception as e:
             logger.error(f"Error processing AirBnB data: {e}", exc_info=True)
