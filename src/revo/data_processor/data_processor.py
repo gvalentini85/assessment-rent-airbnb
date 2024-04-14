@@ -209,6 +209,8 @@ class DataProcessor:
                     df_airbnb.price * 365.0 / (12.0 * df_airbnb.capacity),
                 )
                 .withColumnRenamed("price", "daily_price")
+                .filter(col("zipcode") != "1028")
+                .filter(col("daily_price") < 5000)
                 .select([cname for cname in cols_list])
             )
 
