@@ -203,11 +203,14 @@ class DataProcessor:
             df_airbnb = self.airbnb
             df_airbnb = (
                 df_airbnb.withColumn(
-                    "monthly_price", df_airbnb.price * 365.0 / 12.0
+                    "monthly_price", 365.0 * 0.7 * df_airbnb.price / 12.0
                 )
                 .withColumn(
                     "monthly_price_per_person",
-                    df_airbnb.price * 365.0 / (12.0 * df_airbnb.capacity),
+                    0.7
+                    * 365.0
+                    * df_airbnb.price
+                    / (12.0 * df_airbnb.capacity),
                 )
                 .withColumnRenamed("price", "daily_price")
                 .filter(col("zipcode") != "1028")
