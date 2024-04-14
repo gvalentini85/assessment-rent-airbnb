@@ -27,7 +27,8 @@ class DataProcessor:
         self.rentals = None
         self.post_codes = None
         self.amsterdam_codes = []
-        self.output = None
+        self.prices = None
+        self.avg_prices = None
 
     def clean_airbnb(
         self, df: DataFrame, amsterdam_zipcodes: List[str], post_codes: dict
@@ -226,19 +227,30 @@ class DataProcessor:
             )
 
             # Compute final results
-            self.output = (
-                df_airbnb.union(df_rentals)
-                .groupBy(["source", "zipcode"])
-                .agg(
-                    mean("daily_price").alias("avg_daily_price"),
-                    mean("monthly_price").alias("avg_monthly_price"),
-                    mean("monthly_price_per_person").alias(
-                        "avg_monthly_price_per_person"
-                    ),
-                )
+            self.prices = df_airbnb.union(df_rentals)
+
+            logger.info("AirBnB and Kamernet data aggregated successfully.")
+            return self.prices
+        except Exception as e:
+            logger.error(f"Error aggregating data: {e}", exc_info=True)
+            raise
+
+    def compute_average_by_zipcode(self) -> DataFrame:
+        """
+        Compute the average of daily and monthly prices for the aggregated
+        data by zipcode.
+        """
+
+        try:
+            # Compute final results
+            self.avg_prices = self.prices.groupBy(["source", "zipcode"]).agg(
+                mean("daily_price").alias("avg_daily_price"),
+                mean("monthly_price").alias("avg_monthly_price"),
+                mean("monthly_price_per_person").alias(
+                    "avg_monthly_price_per_person"
+                ),
             )
-            logger.info("Gold data processed successfully.")
-            return self.output
+            return self.avg_prices
         except Exception as e:
             logger.error(f"Error aggregating data: {e}", exc_info=True)
             raise
