@@ -22,7 +22,8 @@ logger = logging.getLogger(__name__)
 class DataProcessor:
     """Handles data processing including cleaning and transformations."""
 
-    def __init__(self):
+    def __init__(self, airbnb_occupancy_rate: float):
+        self.airbnb_occupancy_rate = airbnb_occupancy_rate
         self.airbnb = None
         self.rentals = None
         self.post_codes = None
@@ -203,11 +204,15 @@ class DataProcessor:
             df_airbnb = self.airbnb
             df_airbnb = (
                 df_airbnb.withColumn(
-                    "monthly_price", 365.0 * 0.7 * df_airbnb.price / 12.0
+                    "monthly_price",
+                    365.0
+                    * self.airbnb_occupancy_rate
+                    * df_airbnb.price
+                    / 12.0,
                 )
                 .withColumn(
                     "monthly_price_per_person",
-                    0.7
+                    self.airbnb_occupancy_rate
                     * 365.0
                     * df_airbnb.price
                     / (12.0 * df_airbnb.capacity),
