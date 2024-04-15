@@ -152,7 +152,7 @@ class DataProcessor:
                 .withColumnRenamed("postalCode", "zipcode")
                 .withColumnRenamed("propertyType", "type")
                 .withColumnRenamed("matchCapacity", "capacity")
-                .filter(col("type").isin(["Apartment", "Studio"]))
+                .filter(col("type").isin(["Apartment"]))
                 .filter(col("zipcode").isin(amsterdam_zipcodes))
             )
 
