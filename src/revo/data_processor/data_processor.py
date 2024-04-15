@@ -153,7 +153,6 @@ class DataProcessor:
                 .withColumnRenamed("propertyType", "type")
                 .withColumnRenamed("matchCapacity", "capacity")
                 .filter(col("type").isin(["Apartment", "Studio"]))
-                .filter(~col("zipcode").isin(["1028", "1086"]))
                 .filter(col("zipcode").isin(amsterdam_zipcodes))
             )
 
@@ -202,6 +201,15 @@ class DataProcessor:
 
             # Work on airbnb data: Compute normalized measures
             df_airbnb = self.airbnb
+
+            zipcodes_to_keep = (
+                df_airbnb.groupby("zipcode")
+                .count()
+                .filter(col("count") > 5)
+                .rdd.map(lambda x: x.zipcode)
+                .collect()
+            )
+
             df_airbnb = (
                 df_airbnb.withColumn(
                     "monthly_price",
@@ -218,13 +226,22 @@ class DataProcessor:
                     / (12.0 * df_airbnb.capacity),
                 )
                 .withColumnRenamed("price", "daily_price")
-                .filter(col("zipcode") != "1028")
+                .filter(col("zipcode").isin(zipcodes_to_keep))
                 .filter(col("daily_price") < 5000)
                 .select([cname for cname in cols_list])
             )
 
             # Work on rentals data: Compute normalized measures
             df_rentals = self.rentals
+
+            zipcodes_to_keep = (
+                df_rentals.groupby("zipcode")
+                .count()
+                .filter(col("count") > 5)
+                .rdd.map(lambda x: x.zipcode)
+                .collect()
+            )
+
             df_rentals = (
                 df_rentals.withColumn(
                     "daily_price", df_rentals.rent * 12.0 / 365.0
@@ -234,6 +251,7 @@ class DataProcessor:
                     df_rentals.rent / df_rentals.capacity,
                 )
                 .withColumnRenamed("rent", "monthly_price")
+                .filter(col("zipcode").isin(zipcodes_to_keep))
                 .select([cname for cname in cols_list])
             )
 
