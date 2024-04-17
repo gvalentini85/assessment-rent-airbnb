@@ -36,6 +36,10 @@ class DataProcessor:
     ) -> DataFrame:
         """Generate the silver layer for AirBnB data."""
 
+        # This works correctly, however, on DB community edition it is
+        # particularly slow. I suspect it is due to the use of global memory,
+        # but I had not the time to debug it further.
+        #
         # def zipcode_from_coordinates(coordinate: float):
         #     latitude = coordinate[0]
         #     longitude = coordinate[1]
